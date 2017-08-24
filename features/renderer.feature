@@ -40,6 +40,23 @@ Feature: Rendering CSL nodes
       | (2014).          |
       | (1999a).         |
 
+  Scenario: Citation Number Rendering
+    Given the following style node:
+      """
+      <group prefix="[" suffix="]" delimiter=", ">
+        <text variable="citation-number"/>
+      </group>
+      """
+    When I render the following citation items as "text":
+      | citation-number |
+      | 1               |
+      | 2               |
+      | 3               |
+    Then the results should be:
+      | [1] |
+      | [2] |
+      | [3] |
+
   @html @formatting
   Scenario: Formatted Groups
     Given the following style node:

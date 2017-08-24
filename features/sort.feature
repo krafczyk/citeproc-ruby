@@ -3,6 +3,8 @@ Feature: Sorting
   I want to sort citation items
   According to the rules of a CSL style
 
+
+
   Scenario: Name sorting
     Given the following sort keys:
       """
@@ -48,3 +50,24 @@ Feature: Sorting
     Then the order should be:
       | ID-1      |
       | ID-0      |
+
+  Scenario: Citation number sorting
+    Given the following sort keys:
+      """
+      <sort>
+        <key variable="citation-number"/>
+      </sort>
+      """
+    When I sort the following items:
+      | citation-number |
+      | 5               |
+      | 4               |
+      | 1               |
+      | 2               |
+      | 3               |
+    Then the order should be:
+      | ID-2            |
+      | ID-3            |
+      | ID-4            |
+      | ID-1            |
+      | ID-0            |
