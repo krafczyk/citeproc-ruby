@@ -49,6 +49,26 @@ module CiteProc
       # @param node [CSL::Style::Citation]
       # @return [String] the rendered and formatted string
       def render_citation(data, node)
+        p "Renderer.render_citation 1" + data.inspect
+	p "Renderer.render_citation 1 1" + node.inspect
+	p "Renderer.render_citation 1 2" + node.sort_keys[0].inspect
+	p "Renderer.render_citation 1 2 1" + node.sort_keys[0][:variable]
+	p "Renderer.render_citation 1 3" + node.layout.inspect
+
+	# Sort passed nodes in order if the sort key is citation-number.
+	if node.sort_keys.length > 0 and node.sort_keys[0][:variable] == 'citation-number'
+          all_data_have_citation_number = true
+          for data_instance in data
+	    if data_instance.data[:'citation-number'].nil?
+              all_data_have_citation_number = false
+              break
+            end
+          end
+          if all_data_have_citation_number
+            data.sort!{|x,y| x.data[:'citation-number'] <=> y.data[:'citation-number']}
+	  end
+        end
+
         state.store! data, node
 
         citations = join data.map { |item|
