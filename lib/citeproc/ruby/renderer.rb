@@ -49,12 +49,6 @@ module CiteProc
       # @param node [CSL::Style::Citation]
       # @return [String] the rendered and formatted string
       def render_citation(data, node)
-        p "Renderer.render_citation 1" + data.inspect
-	p "Renderer.render_citation 1 1" + node.inspect
-	p "Renderer.render_citation 1 2" + node.sort_keys[0].inspect
-	p "Renderer.render_citation 1 2 1" + node.sort_keys[0][:variable]
-	p "Renderer.render_citation 1 3" + node.layout.inspect
-
 	# Sort passed nodes in order if the sort key is citation-number.
 	if node.sort_keys.length > 0 and node.sort_keys[0][:variable] == 'citation-number'
           all_data_have_citation_number = true
@@ -65,19 +59,67 @@ module CiteProc
             end
           end
           if all_data_have_citation_number
-            data.sort!{|x,y| x.data[:'citation-number'] <=> y.data[:'citation-number']}
+		  data.sort!{|x,y| x.data[:'citation-number'].to_i <=> y.data[:'citation-number'].to_i}
 	  end
         end
 
         state.store! data, node
 
-        citations = join data.map { |item|
-          render_single_citation item, node.layout
-        }, node.layout.delimiter || ''
+	result = render_layout data, node.layout
 
-        result = format! citations, node.layout
+	if not node[:collapse].nil? and node[:collapse] == "citation-number"
+	  first_num_idx = result.index(/\d/)
+	  last_num_idx = result.length - result.reverse.index(/\d/) -1
+	  prefix = result[0...first_num_idx]
+	  suffix = result[last_num_idx+1..-1]
+	  sub_result = result[first_num_idx..last_num_idx]
+	  num_array = sub_result.split(node.layout.delimiter)
+	  first_idx = -1
+	  last_idx = -1
+	  idx = 0
+	  while idx < num_array.length
+	    if num_array[idx].to_i > num_array[last_idx].to_i + 1
+              if last_idx <= first_idx + 1
+                first_idx = idx
+                last_idx = idx
+                idx += 1
+	      else
+                first_num = num_array[first_idx]
+                last_num = num_array[last_idx]
+                separator = '–'
+                num_array[first_idx] = first_num + separator + last_num
+                tot_del = last_idx - first_idx
+		num_del = 0
+                idx = first_idx + 1
+		first_idx = idx-1
+		last_idx = idx-1
+		while num_del < tot_del
+                  num_array.delete_at(idx)
+                  num_del += 1
+                end
+	      end
+	    else
+	       last_idx = idx
+               idx += 1
+	    end
+          end
+	  new_result = num_array.join(node.layout.delimiter)
+	  new_result = prefix + new_result + suffix
+	  result = new_result
+	end
+
+	result
       ensure
         state.clear! result
+      end
+
+      # @param group [[CiteProc::CitationItem]]
+      # @param node [CSL::Style::Layout]
+      # @return [String] the rendered and string
+      def render_citation_group(group, node)
+         citations = join group.map { |item|
+           render_single_citation item, node
+	 } || ''
       end
 
       # @param data [CiteProc::CitationItem]
@@ -118,31 +160,48 @@ module CiteProc
         state.clear! result
       end
 
-      def render_sort(a, b, node, key)
-        state.store! nil, key
+      #def render_sort(a, b, node, key)
+      def render_sort(item, node)
+	if item.kind_of?(CiteProc::CitationItem)
+	  return ''
+	end
+	key = node.children[0][:variable]
+        #state.store! nil, key
 
-        original_format = @format
-        @format = Formats::Sort.new
-
-        if a.is_a?(CiteProc::Names)
-          [render_name(a, node), render_name(b, node)]
-
-        else
-          # We need to clear any items that are suppressed
-          # because they were used as substitutes during
-          # rendering for sorting purposes!
-          a_rendered = render a.cite, node
-          a.suppressed.clear
-
-          b_rendered = render b.cite, node
-          b.suppressed.clear
-
-          [a_rendered, b_rendered]
-        end
-
+        if key == "citation-number"
+	  item.sort!{|x,y| x.data[:'citation-number'].to_i <=> y.data[:'citation-number'].to_i}
+	end        
+	result = ''
+        #p "Renderer.render_sort 2"
+        #original_format = @format
+        #@format = Formats::Sort.new
+#
+#        p "Renderer.render_sort 3"
+#        if a.is_a?(CiteProc::Names)
+#          p "Renderer.render_sort 4"
+#          [render_name(a, node), render_name(b, node)]
+#
+#        else
+#          p "Renderer.render_sort 5"
+#          # We need to clear any items that are suppressed
+#          # because they were used as substitutes during
+#          # rendering for sorting purposes!
+#          a_rendered = render a.cite, node
+#          a.suppressed.clear
+#
+#          b_rendered = render b.cite, node
+#          b.suppressed.clear
+#
+#          [a_rendered, b_rendered]
+#        end
+#
+#        p "Renderer.render_sort 6"
       ensure
-        @format = original_format
-        state.clear!
+	#p "Renderer.render_sort 7"
+        #@format = original_format
+	#p "Renderer.render_sort 8"
+        #state.clear!
+	#p "Renderer.render_sort 9"
       end
 
     end

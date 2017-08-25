@@ -9,11 +9,22 @@ module CiteProc
       # @param node [CSL::Style::Layout]
       # @return [String]
       def render_layout(item, node)
-        join node.each_child.map { |child|
+        result = join node.each_child.map { |child|
           render item, child
         }.reject(&:empty?), node.delimiter
+        result
       end
 
+      # @param item [CiteProc::CitationData]
+      # @param node [CSL::Style::Layout]
+      # @return [String]
+      def render_layout_data(item, node)
+        result = join node.each_child.map { |child|
+          render item, child
+        }.reject(&:empty?), node.delimiter
+	result
+      end
+      
     end
 
   end
